@@ -32,7 +32,7 @@ public class StudentsApiApplication implements ApplicationRunner {
 	public void run(ApplicationArguments args) throws Exception {
 		// TODO Auto-generated method stub
 		for(int i = 0; i <= 10; i ++) {
-			Student s = new Student("Alam", "Alcantara", new Date(), "RandomUrl");
+			Student s = new Student("Alam", "Alcantara", 21, "RandomUrl");
 			studentService.createStudent(s);
 			log.info("Student created: {}", s.getName());
 		}

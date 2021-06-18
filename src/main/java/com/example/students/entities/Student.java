@@ -34,8 +34,8 @@ public class Student implements Serializable{
 	@Column(name = "lastName")
 	private String lastName;
 	
-	@Column(name = "birthDate")
-	private Date birthDate;
+	@Column(name = "age")
+	private int age;
 	
 	@Column(name = "biographyDocumentUrl")
 	private String biographyDocumentUrl;
@@ -45,27 +45,22 @@ public class Student implements Serializable{
 		this.name = "";
 		this.lastName = "";
 		this.biographyDocumentUrl = "";
-		this.birthDate = new Date();
 	}
-	
-
 
 
 	/**
 	 * @param name
 	 * @param lastName
-	 * @param birthDate
+	 * @param age
 	 * @param biographyDocumentUrl
 	 */
-	public Student(String name, String lastName, Date birthDate, String biographyDocumentUrl) {
+	public Student(String name, String lastName, int age, String biographyDocumentUrl) {
 		super();
 		this.name = name;
 		this.lastName = lastName;
-		this.birthDate = birthDate;
+		this.age = age;
 		this.biographyDocumentUrl = biographyDocumentUrl;
 	}
-
-
 
 
 	/**
@@ -111,17 +106,17 @@ public class Student implements Serializable{
 	}
 
 	/**
-	 * @return the birthDate
+	 * @return the age
 	 */
-	public Date getBirthDate() {
-		return birthDate;
+	public int getAge() {
+		return age;
 	}
 
 	/**
-	 * @param birthDate the birthDate to set
+	 * @param age the age to set
 	 */
-	public void setBirthDate(Date birthDate) {
-		this.birthDate = birthDate;
+	public void setAge(int age) {
+		this.age = age;
 	}
 
 	/**
