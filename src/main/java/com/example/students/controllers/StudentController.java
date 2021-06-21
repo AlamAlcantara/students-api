@@ -73,7 +73,7 @@ public class StudentController {
 	}
 	
 	@PostMapping("/file")
-	public ResponseEntity<Void> uploadFile(@RequestParam("file") MultipartFile file) {
+	public ResponseEntity<Void> createStudentsFromFile(@RequestParam("file") MultipartFile file) {
 		studentService.bulkStudents(file);
 		return new ResponseEntity<>(HttpStatus.OK);
 	}

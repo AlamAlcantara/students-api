@@ -26,6 +26,8 @@ import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import com.amazonaws.SdkClientException;
+import com.amazonaws.services.s3.AmazonS3;
 import com.example.students.entities.Student;
 import com.example.students.repositories.StudentRepository;
 
@@ -38,6 +40,9 @@ public class StudentService {
 	
 	@Autowired
 	private StudentRepository studentRepository;
+	
+	@Autowired
+	private AmazonS3 s3;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(StudentService.class);
@@ -110,11 +115,28 @@ public class StudentService {
 		//Search student
 		Student student = this.getStudentById(studentId);
 		
-		//upload the file to s3 and get the url
-		String biographyUrl = "";
+		//upload the file to s3 and update the student info
+		String bucketName = "college-students";
+		String pathToUpload = String.format("students/%s/biography/%s", studentId, biographyFile.getOriginalFilename());
+		
+		try {
+			String[] fileName = biographyFile.getOriginalFilename().split("\\.");
+			
+			File fileToUpload = File.createTempFile(fileName[0], fileName[1]);
+			FileCopyUtils.copy(biographyFile.getInputStream(), new FileOutputStream(fileToUpload));
+			
+			//TODO: check if the directory is empty other wise the current file needs to be replaced
+			
+			s3.putObject(bucketName, pathToUpload, fileToUpload);
+			
+		} catch (SdkClientException | IOException e) {
+			e.printStackTrace();
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while saving the student biography");
+		}
+
 		
 		//Update student biography url
-		student.setBiographyDocumentUrl(biographyUrl);
+		student.setBiographyDocumentUrl(pathToUpload);
 		this.updateStudent(studentId, student);
 	}
 
