@@ -25,24 +25,24 @@ public class Student implements Serializable{
 	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
-	@Column(name = "Id")
+	@Column(name = "id")
 	private Integer Id;
 	
-	@Column(name = "name")
-	private String name;
+	@Column(name = "first_name")
+	private String firstName;
 	
-	@Column(name = "lastName")
+	@Column(name = "last_name")
 	private String lastName;
 	
 	@Column(name = "age")
 	private int age;
 	
-	@Column(name = "biographyDocumentUrl")
+	@Column(name = "biography_url")
 	private String biographyDocumentUrl;
 	
 	
 	public Student() {
-		this.name = "";
+		this.firstName = "";
 		this.lastName = "";
 		this.biographyDocumentUrl = "";
 	}
@@ -54,9 +54,9 @@ public class Student implements Serializable{
 	 * @param age
 	 * @param biographyDocumentUrl
 	 */
-	public Student(String name, String lastName, int age, String biographyDocumentUrl) {
+	public Student(String firstName, String lastName, int age, String biographyDocumentUrl) {
 		super();
-		this.name = name;
+		this.firstName = firstName;
 		this.lastName = lastName;
 		this.age = age;
 		this.biographyDocumentUrl = biographyDocumentUrl;
@@ -77,19 +77,23 @@ public class Student implements Serializable{
 		Id = id;
 	}
 
-	/**
-	 * @return the name
-	 */
-	public String getName() {
-		return name;
-	}
+	
 
 	/**
-	 * @param name the name to set
+	 * @return the firstName
 	 */
-	public void setName(String name) {
-		this.name = name;
+	public String getFirstName() {
+		return firstName;
 	}
+
+
+	/**
+	 * @param firstName the firstName to set
+	 */
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
 
 	/**
 	 * @return the lastName
