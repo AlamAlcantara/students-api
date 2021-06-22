@@ -30,7 +30,10 @@ public class AmazonS3Service {
 	
 	private static final Logger log = LoggerFactory.getLogger(AmazonS3Service.class);
 	
-	
+	/** 
+	 * Method to delete all the objects in the specified path
+	 * @param path -> path (key)
+	 * */
 	public void deleteObjects(String path) {
 		ObjectListing objectListing = s3.listObjects(bucketName, path);
 		
@@ -40,12 +43,21 @@ public class AmazonS3Service {
 		}
 	}
 	
-	
+	/** 
+	 * Method to upload a file in the specified path
+	 * @param pathToUpload -> path (key)
+	 * @param fileToUpload -> to be uploaded
+	 * */
 	public void putObject(String pathToUpload, File fileToUpload) throws SdkClientException, AmazonServiceException {
 		s3.putObject(bucketName, pathToUpload, fileToUpload);
 	}
 	
 	
+	/** 
+	 * Method to get an object from the specified path
+	 * @param pathToSearch -> path (key)
+	 * @return S3Object
+	 * */
 	public S3Object getS3Object(String pathToSearch) throws SdkClientException, 
 		AmazonServiceException {
 		return s3.getObject(bucketName, pathToSearch);

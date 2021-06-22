@@ -50,21 +50,41 @@ public class StudentService {
 	
 	private static final Logger log = LoggerFactory.getLogger(StudentService.class);
 
-	
+	/** 
+	 * Method to get the list of the students
+	 * @return List of Student
+	 * */
 	public List<Student> getStudents() {
 		return studentRepository.findAll();
 	}
 	
+	/** 
+	 * Method to create a student
+	 * @param student -> Student to be created
+	 * @return the created Student
+	 * */
 	public Student createStudent(Student student) {
 		return studentRepository.save(student);
 	}
 	
+	/** 
+	 * Method to get a student by its id
+	 * @param id -> integer of the id to be searched
+	 * @return Student
+	 * @throws ResponseStatusException if the student doesn't exists
+	 * */
 	public Student getStudentById(Integer id) {
 		return studentRepository.findById(id)
 				.orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Student not found"));
 	}
 	
-	
+	/** 
+	 * Method to update a student by its id
+	 * @param id -> integer of the id to be updated
+	 * @param student -> the student's new info
+	 * @return Student
+	 * @throws ResponseStatusException if the student doesn't exists
+	 * */
 	public Student updateStudent(Integer studentId, Student student) {
 		Student loadedStudent = this.getStudentById(studentId);
 		student.setId(studentId);
@@ -72,13 +92,27 @@ public class StudentService {
 		return this.createStudent(student);
 	}
 	
+	/** 
+	 * Method to delete a student by its id
+	 * @param id -> integer of the id to be deleted
+	 * */
 	public void deleteStudent(Integer studentId) {
 		this.deleteStudenBiography(studentId);
 		this.studentRepository.deleteById(studentId);
 	}
 	
-	
+	/** 
+	 * Method to create a students from an XML file
+	 * @param file -> XML MultipartFile containing the students info
+	 * */
 	public void bulkStudents(MultipartFile file) {
+		
+		String fileExtension = file.getOriginalFilename().split("\\.")[1];
+		
+		if(!fileExtension.equals("xml")) {
+			throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "The file should be an XML");
+		}
+		
 		try {
 			File xmlFile = File.createTempFile("students", "xml");
 			FileCopyUtils.copy(file.getInputStream(), new FileOutputStream(xmlFile));
@@ -113,7 +147,11 @@ public class StudentService {
 		}
 	}
 	
-	
+	/** 
+	 * Method to upload a student biography file
+	 * @param id -> student id
+	 * @param biographyFile -> the file to be uploaded
+	 * */
 	public void uploadStudentBiography(int studentId, MultipartFile biographyFile) {
 		
 		//check file extension
@@ -153,6 +191,11 @@ public class StudentService {
 	}
 	
 	
+	/** 
+	 * Method to check if the biography file extension is valid
+	 * @param fileExtension -> file extension to be evaluated
+	 * @return true if the file extension is valid
+	 * */
 	public boolean isFileExtensionValid(String fileExtension) {	
 		List<String> permittedFileExtensions = new ArrayList<>();
 		permittedFileExtensions.add("pdf");
@@ -164,10 +207,18 @@ public class StudentService {
 	}
 	
 	
-	
+	/** 
+	 * Method to get a student biography file
+	 * @param studentId -> id of the student
+	 * @return Resource of the biography file
+	 * */
 	public Resource getStudentBiography(int studentId) {
 		
 		Student s = this.getStudentById(studentId);
+		
+		if(s.getBiographyDocumentUrl().isEmpty()) {
+			throw new ResponseStatusException(HttpStatus.NO_CONTENT, "The student has no biography file");
+		}
 	
 		try {
 			S3Object biographyFile = amazonS3Service.getS3Object(s.getBiographyDocumentUrl());
@@ -188,6 +239,10 @@ public class StudentService {
 		
 	}
 	
+	/** 
+	 * Method to delete a biography file
+	 * @param id -> integer of the student id
+	 * */
 	public void deleteStudenBiography(int studentId) {
 		Student s = this.getStudentById(studentId);
 		
