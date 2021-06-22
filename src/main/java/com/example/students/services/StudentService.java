@@ -6,6 +6,7 @@ package com.example.students.services;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -15,6 +16,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.io.FileSystemResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileCopyUtils;
@@ -27,7 +30,7 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
 import com.amazonaws.SdkClientException;
-import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.S3Object;
 import com.example.students.entities.Student;
 import com.example.students.repositories.StudentRepository;
 
@@ -42,7 +45,7 @@ public class StudentService {
 	private StudentRepository studentRepository;
 	
 	@Autowired
-	private AmazonS3 s3;
+	private AmazonS3Service amazonS3Service;
 	
 	
 	private static final Logger log = LoggerFactory.getLogger(StudentService.class);
@@ -70,6 +73,7 @@ public class StudentService {
 	}
 	
 	public void deleteStudent(Integer studentId) {
+		this.deleteStudenBiography(studentId);
 		this.studentRepository.deleteById(studentId);
 	}
 	
@@ -112,11 +116,17 @@ public class StudentService {
 	
 	public void uploadStudentBiography(int studentId, MultipartFile biographyFile) {
 		
+		//check file extension
+		boolean isExtensionValid = this.isFileExtensionValid(biographyFile.getOriginalFilename().split("\\.")[1]);
+		
+		if(!isExtensionValid) {
+			throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid file extension");
+		}
+		
 		//Search student
 		Student student = this.getStudentById(studentId);
 		
 		//upload the file to s3 and update the student info
-		String bucketName = "college-students";
 		String pathToUpload = String.format("students/%s/biography/%s", studentId, biographyFile.getOriginalFilename());
 		
 		try {
@@ -125,19 +135,71 @@ public class StudentService {
 			File fileToUpload = File.createTempFile(fileName[0], fileName[1]);
 			FileCopyUtils.copy(biographyFile.getInputStream(), new FileOutputStream(fileToUpload));
 			
-			//TODO: check if the directory is empty other wise the current file needs to be replaced
+			//Check if the directory is empty other wise the current file needs to be replaced
+			String pathToSearch =  String.format("students/%s/biography", studentId);
+			amazonS3Service.deleteObjects(pathToSearch);
 			
-			s3.putObject(bucketName, pathToUpload, fileToUpload);
+			//Save file
+			amazonS3Service.putObject(pathToUpload, fileToUpload);
+			
+			//Update student biography URL
+			student.setBiographyDocumentUrl(pathToUpload);
+			this.updateStudent(studentId, student);
 			
 		} catch (SdkClientException | IOException e) {
 			e.printStackTrace();
 			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while saving the student biography");
 		}
-
+	}
+	
+	
+	public boolean isFileExtensionValid(String fileExtension) {	
+		List<String> permittedFileExtensions = new ArrayList<>();
+		permittedFileExtensions.add("pdf");
+		permittedFileExtensions.add("txt");
+		permittedFileExtensions.add("doc");
+		permittedFileExtensions.add("docx");
 		
-		//Update student biography url
-		student.setBiographyDocumentUrl(pathToUpload);
-		this.updateStudent(studentId, student);
+		return permittedFileExtensions.contains(fileExtension);	
+	}
+	
+	
+	
+	public Resource getStudentBiography(int studentId) {
+		
+		Student s = this.getStudentById(studentId);
+	
+		try {
+			S3Object biographyFile = amazonS3Service.getS3Object(s.getBiographyDocumentUrl());
+				
+			String[] directories = biographyFile.getKey().split("\\/");
+			String fileName = directories[directories.length - 1];
+		
+			String tDir = System.getProperty("java.io.tmpdir");
+			
+			File fileToRetrieve = new File(tDir, fileName);
+			FileCopyUtils.copy(biographyFile.getObjectContent(), new FileOutputStream(fileToRetrieve));
+			return new FileSystemResource(fileToRetrieve);
+			
+		} catch (SdkClientException | IOException e) {
+			e.printStackTrace();
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while loading the student biography");
+		}
+		
+	}
+	
+	public void deleteStudenBiography(int studentId) {
+		Student s = this.getStudentById(studentId);
+		
+		try {
+			amazonS3Service.deleteObjects(s.getBiographyDocumentUrl());
+			s.setBiographyDocumentUrl("");
+			this.studentRepository.save(s);
+			
+		} catch (SdkClientException e) {
+			e.printStackTrace();
+			throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occurred while deleting the student biography");
+		}
 	}
 
 }
